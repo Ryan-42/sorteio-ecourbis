@@ -1,10 +1,19 @@
 services:
   - type: web
     name: sorteio-ecourbis
-    runtime: static
-    buildCommand: ""
-    staticPublishPath: ./
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn server:app --host 0.0.0.0 --port $PORT"
     pullRequestPreviewsEnabled: false
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: TOKEN_EXPIRE_HORAS
+        value: "12"
     headers:
       - path: /*
         name: X-Frame-Options

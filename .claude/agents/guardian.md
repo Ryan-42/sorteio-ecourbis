@@ -65,7 +65,7 @@ Quando receber código para revisar:
 2. **Verifique cada invariante** — leia o código novo e verifique se viola alguma das 3
 3. **Analise efeitos colaterais** — mudanças em `confirmarGanhador`, `estado`, `salvar` podem ter impacto indireto
 4. **Verifique novos `innerHTML`** — qualquer novo uso de `.innerHTML` com dados variáveis
-5. **Verifique novas requisições de rede** — `fetch`, `XMLHttpRequest`, `<script src="...">` externo
+5. **Verifique novas requisições de rede em `js/app.js`** — `fetch`, `XMLHttpRequest`, `<script src="...">` externo. **Exceção conhecida e aprovada**: `login.html` faz `fetch('/login')` enviando só a senha de acesso para `server.py` (camada de autenticação do deploy público, não faz parte da SPA). Isso NÃO é violação. Qualquer `fetch` dentro de `js/app.js` enviando dados de `estado` (participantes, ganhadores) SIM é violação e deve ser bloqueado.
 
 ## FORMATO DO RELATÓRIO
 

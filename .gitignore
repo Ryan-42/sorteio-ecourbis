@@ -13,3 +13,11 @@ desktop.ini
 # Dados de teste gerados localmente (não versionar dados fictícios/reais)
 teste-participantes.csv
 participantes-corrigido.csv
+
+# Python (server.py de autenticação)
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+

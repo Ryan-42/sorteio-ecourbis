@@ -72,7 +72,61 @@ sorteio-ecourbis/
 │   ├── logo-cor.png        logo colorido
 │   └── fonts/              Anton + Oswald (offline)
 ├── modelo-planilha.xlsx    modelo p/ o RH
+├── server.py               gateway de autenticação (opcional, só p/ deploy público)
+├── login.html              tela de login (opcional, só p/ deploy público)
+├── gerar_hash.py           helper p/ gerar a senha de acesso
+├── requirements.txt        dependências Python (só p/ deploy público)
 └── README.md
 ```
 
-Feito em HTML/CSS/JS puro, sem frameworks e sem dependências de runtime.
+A SPA em si é HTML/CSS/JS puro, sem frameworks e sem dependências de runtime.
+O `server.py` é uma camada **opcional** de Python (FastAPI) usada só quando o
+sorteio é publicado num link público — ver seção abaixo.
+
+---
+
+## Deploy público com senha (Render)
+
+Para uso em um único computador no evento, **não precisa de nada disto** — basta
+abrir o `index.html`. Esta seção é só para quando o sorteio precisa ficar disponível
+por um link público (ex.: acessar de outro dispositivo, ou montar com antecedência).
+
+Como o link fica acessível por qualquer pessoa, o `server.py` adiciona uma tela de
+login com senha antes de liberar o sorteio. Os dados dos participantes continuam
+nunca saindo do navegador — a senha só protege o **acesso à página**, não cria
+nenhum banco de dados nem envia informação de funcionários para lugar nenhum.
+
+### 1. Gerar a senha
+
+```bash
+pip install -r requirements.txt
+python gerar_hash.py
+```
+
+Isso pede a senha desejada e devolve um hash pbkdf2_sha256, por exemplo:
+
+```
+ADMIN_PASSWORD_HASH=$pbkdf2-sha256$29000$abcdefghijklmnopqrstuv...
+```
+
+### 2. Criar o serviço no Render
+
+1. Acesse [render.com](https://render.com) → **New +** → **Web Service**
+2. Conecte o repositório `sorteio-ecourbis`
+3. O Render detecta o `render.yaml` automaticamente (build/start command já configurados)
+4. Em **Environment**, adicione a variável `ADMIN_PASSWORD_HASH` com o valor gerado no passo 1
+   (o `SECRET_KEY` já é gerado automaticamente pelo Render)
+5. **Create Web Service**
+
+Em poucos minutos a URL pública estará no ar, pedindo a senha antes de mostrar o sorteio.
+
+### 3. Testar localmente com senha
+
+```bash
+python gerar_hash.py                          # gera o hash
+export ADMIN_PASSWORD_HASH="<hash gerado>"    # Linux/Mac
+set ADMIN_PASSWORD_HASH=<hash gerado>          # Windows (cmd)
+uvicorn server:app --reload
+```
+
+Acesse `http://localhost:8000` — vai redirecionar para a tela de login.
