@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sorteio Copa · EcoUrbis</title>
+<meta name="description" content="Sistema interno de sorteio de brindes — EcoUrbis Ambiental.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== Sprite de ícones (carrega uma vez, sem requisições externas) ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="ic-bola" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.6"/>
+      <path d="M12 6.7l3.1 2.2-1.2 3.6h-3.8L8.9 8.9z" fill="currentColor"/>
+      <path d="M12 6.7V3.2M14.9 8.9l3.3-1.1M13.7 12.5l2.1 2.9M10.3 12.5l-2.1 2.9M9.1 8.9L5.8 7.8" fill="none" stroke="currentColor" stroke-width="1.3"/>
+    </symbol>
+    <symbol id="ic-camisa" viewBox="0 0 24 24">
+      <path d="M8.5 3l-5 2.4 1.7 4 2.3-.7V21h9V8.7l2.3.7 1.7-4L15.5 3a3.6 3.6 0 0 1-7 0z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-moto" viewBox="0 0 24 24">
+      <circle cx="5" cy="17" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <circle cx="19" cy="17" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M5 17l4-6h5l2 3M8 11l-1.5-3H4M14 11h4.5l1.5 6M11 8h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-trofeu" viewBox="0 0 24 24">
+      <path d="M7 4h10v3a5 5 0 0 1-10 0zM7 5H4v1.5A3.5 3.5 0 0 0 7 10M17 5h3v1.5A3.5 3.5 0 0 1 17 10M12 12v4M8.5 20h7M9.5 16h5l.6 4h-6.2z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-upload" viewBox="0 0 24 24">
+      <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-lixo" viewBox="0 0 24 24">
+      <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0v12a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="ic-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ===================== HEADER ===================== -->
+<header class="topo">
+  <div class="topo-marca">
+    <img src="assets/logo-branco.png" alt="EcoUrbis" class="logo">
+    <span class="topo-sub">Sorteio&nbsp;Copa</span>
+  </div>
+  <nav class="passos" aria-label="Etapas">
+    <button class="passo" data-tela="importar"><b>1</b> Importar</button>
+    <button class="passo" data-tela="brindes"><b>2</b> Brindes</button>
+    <button class="passo" data-tela="sorteio"><b>3</b> Sorteio</button>
+    <button class="passo" data-tela="ganhadores"><b>4</b> Ganhadores</button>
+  </nav>
+  <div id="salvo-indicator" class="salvo-indicator" aria-hidden="true"></div>
+</header>
+
+<main>
+<!-- ===================== TELA 1 · IMPORTAR ===================== -->
+<section id="tela-importar" class="tela">
+  <div class="hero">
+    <p class="eyebrow">EcoUrbis Ambiental · RH</p>
+    <h1 class="titulo-hero">Sorteio<br><span>da Copa</span></h1>
+    <p class="lead">Importe a planilha de participantes, configure os brindes e conduza o sorteio ao vivo. Tudo roda no seu computador — nenhum dado sai daqui.</p>
+  </div>
+
+  <label id="dropzone" class="dropzone" for="arquivo" tabindex="0" role="button" aria-label="Selecionar planilha">
+    <svg class="dz-icone"><use href="#ic-upload"/></svg>
+    <strong>Arraste a planilha aqui</strong>
+    <span>ou clique para escolher · .xlsx ou .csv</span>
+    <input type="file" id="arquivo" accept=".xlsx,.xls,.csv" hidden>
+  </label>
+
+  <p id="import-status" class="import-status" hidden></p>
+
+  <div id="import-resumo" class="resumo" hidden>
+    <div class="resumo-num"><span id="qtd-part">0</span><small>participantes</small></div>
+    <div class="resumo-prev">
+      <table id="preview"><thead><tr><th>Nome</th><th>Matrícula</th><th>Função</th></tr></thead><tbody></tbody></table>
+      <p class="resumo-mais" id="preview-mais"></p>
+    </div>
+    <button class="btn-primario" data-ir="brindes">Configurar brindes →</button>
+  </div>
+
+  <p class="modelo-dica">Não tem o arquivo? <a href="modelo-planilha.xlsx" download>Baixe o modelo</a> com as colunas certas: <code>Nome</code>, <code>Matrícula</code>, <code>Função</code>.</p>
+</section>
+
+<!-- ===================== TELA 2 · BRINDES ===================== -->
+<section id="tela-brindes" class="tela">
+  <header class="tela-cabeca">
+    <h2>Brindes</h2>
+    <p>Defina o que será sorteado. A <strong>moto</strong> é tratada como prêmio final.</p>
+  </header>
+
+  <div class="brinde-form">
+    <div class="tipo-seletor" role="radiogroup" aria-label="Tipo de brinde">
+      <button class="tipo" data-tipo="bola" aria-pressed="true"><svg><use href="#ic-bola"/></svg>Bola</button>
+      <button class="tipo" data-tipo="camisa" aria-pressed="false"><svg><use href="#ic-camisa"/></svg>Camisa</button>
+      <button class="tipo" data-tipo="moto" aria-pressed="false"><svg><use href="#ic-moto"/></svg>Moto</button>
+    </div>
+    <input type="text" id="brinde-nome" class="campo" placeholder="Nome do brinde (ex.: Bola oficial)" maxlength="40">
+    <input type="number" id="brinde-qtd" class="campo campo-qtd" value="1" min="1" max="999" aria-label="Quantidade">
+    <button class="btn-add" id="add-brinde"><svg><use href="#ic-mais"/></svg>Adicionar</button>
+  </div>
+
+  <ul id="lista-brindes" class="lista-brindes"></ul>
+  <p id="brindes-vazio" class="vazio">Nenhum brinde ainda. Adicione o primeiro acima.</p>
+
+  <div class="acoes-rodape">
+    <button class="btn-fantasma" data-ir="importar">← Voltar</button>
+    <button class="btn-primario" data-ir="sorteio" id="ir-sorteio" disabled>Ir ao sorteio →</button>
+  </div>
+</section>
+
+<!-- ===================== TELA 3 · SORTEIO (PALCO) ===================== -->
+<section id="tela-sorteio" class="tela tela-palco">
+  <div class="palco-topo">
+    <label class="brinde-atual-wrap">
+      <span class="brinde-atual-rotulo">Sorteando agora</span>
+      <select id="seletor-brinde" class="brinde-atual"></select>
+    </label>
+
+    <div class="palco-controles">
+      <label class="controle-wrap" title="Quantidade a sortear de uma vez (lote)">
+        <span class="controle-rotulo">Qtd</span>
+        <input type="number" id="lote-qtd" class="campo campo-mini" value="1" min="1" max="999" aria-label="Sortear quantos de uma vez">
+      </label>
+      <label class="controle-wrap" title="Controla a velocidade da animação — maior = mais suspense">
+        <span class="controle-rotulo">Tensão</span>
+        <input type="range" id="slider-velocidade" class="slider-tensao" min="0.5" max="3" step="0.25" value="1" aria-label="Nível de tensão da animação">
+        <span id="velocidade-label" class="controle-valor">Normal</span>
+      </label>
+      <button id="btn-som" class="btn-controle" aria-pressed="false" title="Som">🔊</button>
+      <button id="btn-apresentacao" class="btn-controle btn-controle-dest" aria-pressed="false" title="Modo apresentação (tela cheia)">⛶</button>
+    </div>
+
+    <div class="contador-wrap">
+      <div class="contador-stat"><span id="qtd-elegiveis">0</span><small>elegíveis</small></div>
+      <div class="contador-stat"><span id="qtd-ganhou">0</span><small>premiados</small></div>
+      <div class="contador-stat"><span id="qtd-total">0</span><small>total</small></div>
+    </div>
+  </div>
+
+  <div id="jumbotron" class="jumbotron" aria-live="polite">
+    <div class="placar-luzes" aria-hidden="true"></div>
+    <p class="jumbo-rotulo" id="jumbo-rotulo">Pronto para sortear</p>
+    <p class="jumbo-nome" id="jumbo-nome">— — —</p>
+    <p class="jumbo-meta" id="jumbo-meta"></p>
+    <div class="jumbo-lista" id="jumbo-lista" hidden></div>
+    <div class="jumbo-brinde" id="jumbo-brinde" hidden>
+      <svg><use href="#ic-bola"/></svg><span></span>
+    </div>
+  </div>
+
+  <div class="palco-acoes">
+    <button id="btn-sortear" class="btn-sortear">Sortear</button>
+    <div id="acoes-ganhador" class="acoes-ganhador" hidden>
+      <button id="btn-confirmar" class="btn-confirmar">Confirmar ganhador</button>
+      <button id="btn-resortear" class="btn-fantasma">Sortear de novo</button>
+    </div>
+  </div>
+
+  <canvas id="confete" class="confete" aria-hidden="true"></canvas>
+</section>
+
+<!-- botão flutuante para sair do modo apresentação -->
+<button id="btn-sair-apresentacao" class="btn-sair-apresentacao" aria-label="Sair do modo apresentação">Sair ✕</button>
+
+<!-- ===================== TELA 4 · GANHADORES ===================== -->
+<section id="tela-ganhadores" class="tela">
+  <header class="tela-cabeca tela-cabeca-row">
+    <div>
+      <h2>Ganhadores</h2>
+      <p>Registro completo com data e hora de cada sorteio.</p>
+    </div>
+    <button id="btn-historico" class="btn-fantasma btn-sm">📋 Histórico</button>
+  </header>
+
+  <div id="ganhadores-vazio" class="vazio">Nenhum sorteio realizado ainda.</div>
+
+  <div id="ganhadores-wrap" hidden>
+    <div class="busca-wrap">
+      <input type="search" id="busca-ganhador" class="campo campo-busca" placeholder="Buscar por nome, matrícula ou função…" aria-label="Buscar ganhadores">
+    </div>
+    <table class="tabela-ganhadores">
+      <thead><tr><th>#</th><th>Nome</th><th>Matrícula</th><th>Função</th><th>Brinde</th><th>Horário</th></tr></thead>
+      <tbody id="tbody-ganhadores"></tbody>
+    </table>
+    <div class="acoes-rodape acoes-rodape-ganhadores">
+      <div class="acoes-grupo">
+        <button class="btn-primario" id="export-xlsx">Exportar XLSX</button>
+        <button class="btn-fantasma" id="export-csv">Exportar CSV</button>
+      </div>
+      <div class="acoes-grupo">
+        <button class="btn-fantasma" id="desfazer-ultimo" disabled>↩ Desfazer último</button>
+        <button class="btn-fantasma btn-perigo" id="limpar-tudo">Reiniciar sorteio</button>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ===== Diálogo de confirmação genérico ===== -->
+<dialog id="confirmador" class="confirmador">
+  <p id="confirmador-msg"></p>
+  <div class="confirmador-btns">
+    <button id="confirmador-sim" class="btn-primario">Confirmar</button>
+    <button id="confirmador-nao" class="btn-fantasma">Cancelar</button>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<!-- Modal histórico de eventos -->
+<dialog id="historico-dlg" class="historico-dlg">
+  <div class="historico-header">
+    <h3>Histórico de Eventos</h3>
+    <button id="historico-fechar" class="btn-fechar-dlg" aria-label="Fechar histórico">✕</button>
+  </div>
+  <div id="historico-lista" class="historico-lista"></div>
+</dialog>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

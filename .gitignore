@@ -1,0 +1,15 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+
+# Claude Code (config local, não compartilhar)
+.claude/settings.local.json
+
+# Dados de teste gerados localmente (não versionar dados fictícios/reais)
+teste-participantes.csv
+participantes-corrigido.csv

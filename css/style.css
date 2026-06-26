@@ -1,0 +1,526 @@
+/* ============================================================
+   SORTEIO COPA · ECOURBIS
+   Direção: "estádio à noite" — azul institucional + gramado,
+   ouro reservado ao ganhador e à moto.
+   ============================================================ */
+
+@font-face{
+  font-family:"Anton"; src:url("../assets/fonts/anton.woff2") format("woff2");
+  font-weight:400; font-display:swap;
+}
+@font-face{
+  font-family:"Oswald"; src:url("../assets/fonts/oswald.woff2") format("woff2");
+  font-weight:200 700; font-display:swap;
+}
+
+:root{
+  --azul:#2151A3;
+  --azul-prof:#14306a;
+  --azul-noite:#0c1f47;
+  --verde:#4FB286;
+  --verde-suave:#9ECEB0;
+  --ouro:#F5C451;
+  --ouro-prof:#e0a92e;
+  --gelo:#EAF1FB;
+  --gelo-mid:#aebfdc;
+  --linha:rgba(174,191,220,.16);
+  --carvao:#0a1733;
+  --raio:14px;
+  --sombra:0 18px 50px -18px rgba(0,0,0,.55);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none !important}   /* garante que classes com display não vençam o atributo hidden */
+html{scroll-behavior:smooth}
+body{
+  font-family:"Oswald","Segoe UI",system-ui,sans-serif;
+  color:var(--gelo);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #2a5fc0 0%, var(--azul-prof) 45%, var(--azul-noite) 100%);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+/* listras de gramado, bem sutis, ao fundo */
+body::before{
+  content:""; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.4;
+  background:repeating-linear-gradient(115deg, transparent 0 70px, rgba(79,178,134,.05) 70px 140px);
+}
+main{position:relative; z-index:1; max-width:1040px; margin:0 auto; padding:28px 20px 80px}
+
+/* ---------- HEADER ---------- */
+.topo{
+  position:sticky; top:0; z-index:10;
+  display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  padding:14px 22px;
+  background:rgba(12,31,71,.78); backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--linha);
+}
+.topo-marca{display:flex; align-items:center; gap:14px}
+.logo{height:34px; width:auto; display:block; filter:drop-shadow(0 1px 4px rgba(0,0,0,.3))}
+.topo-sub{
+  font-weight:600; letter-spacing:.14em; text-transform:uppercase; font-size:.74rem;
+  color:var(--verde-suave); border-left:1px solid var(--linha); padding-left:14px;
+}
+.passos{display:flex; gap:4px; flex-wrap:wrap}
+.passo{
+  font-family:inherit; font-size:.82rem; letter-spacing:.04em; font-weight:500;
+  color:var(--gelo-mid); background:transparent; border:0; cursor:pointer;
+  padding:8px 12px; border-radius:9px; display:flex; align-items:center; gap:7px;
+  transition:background .18s, color .18s;
+}
+.passo b{
+  display:grid; place-items:center; width:19px; height:19px; border-radius:50%;
+  font-size:.7rem; background:rgba(174,191,220,.18); color:var(--gelo);
+}
+.passo:hover{color:var(--gelo); background:rgba(255,255,255,.05)}
+.passo.atual{color:#fff; background:rgba(79,178,134,.16)}
+.passo.atual b{background:var(--verde); color:var(--carvao)}
+
+/* ---------- TELAS ---------- */
+.tela{display:none; animation:entra .4s ease both}
+.tela.ativa{display:block}
+@keyframes entra{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+
+.tela-cabeca{margin-bottom:22px}
+.tela-cabeca h2{font-family:"Anton"; font-size:clamp(2rem,6vw,3rem); letter-spacing:.01em; line-height:.95}
+.tela-cabeca p{color:var(--gelo-mid); margin-top:6px; font-weight:300; max-width:52ch}
+
+/* ---------- HERO (importar) ---------- */
+.hero{text-align:center; padding:18px 0 30px}
+.eyebrow{
+  text-transform:uppercase; letter-spacing:.22em; font-size:.72rem; font-weight:600;
+  color:var(--verde-suave); margin-bottom:14px;
+}
+.titulo-hero{
+  font-family:"Anton"; font-size:clamp(3.2rem,13vw,6.4rem); line-height:.86; letter-spacing:.005em;
+  text-transform:uppercase;
+}
+.titulo-hero span{color:var(--ouro)}
+.lead{max-width:46ch; margin:20px auto 0; color:var(--gelo-mid); font-weight:300; font-size:1.04rem; line-height:1.5}
+
+/* ---------- DROPZONE ---------- */
+.dropzone{
+  display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;
+  padding:42px 22px; margin:6px auto 0; max-width:560px;
+  border:2px dashed rgba(158,206,176,.4); border-radius:var(--raio);
+  background:rgba(255,255,255,.035); cursor:pointer; color:var(--gelo);
+  transition:border-color .2s, background .2s, transform .2s;
+}
+.dropzone:hover,.dropzone:focus-visible{border-color:var(--verde); background:rgba(79,178,134,.08); transform:translateY(-2px); outline:none}
+.dropzone.arrastando{border-color:var(--ouro); background:rgba(245,196,81,.1)}
+.dz-icone{width:40px; height:40px; color:var(--verde-suave)}
+.dropzone strong{font-size:1.18rem; font-weight:600}
+.dropzone span{color:var(--gelo-mid); font-size:.9rem; font-weight:300}
+
+.import-status{text-align:center; margin:16px auto 0; max-width:560px; font-weight:300}
+.import-status.erro{color:#ffb4a8}
+.import-status.ok{color:var(--verde-suave)}
+
+.modelo-dica{text-align:center; margin-top:26px; color:var(--gelo-mid); font-size:.86rem; font-weight:300}
+.modelo-dica a{color:var(--verde-suave); font-weight:500}
+.modelo-dica code{background:rgba(255,255,255,.08); padding:1px 6px; border-radius:5px; font-size:.82em}
+
+/* ---------- RESUMO IMPORT ---------- */
+.resumo{
+  margin:28px auto 0; max-width:680px; display:grid; gap:18px;
+  grid-template-columns:170px 1fr; align-items:start;
+  background:rgba(255,255,255,.04); border:1px solid var(--linha); border-radius:var(--raio); padding:22px;
+}
+.resumo-num{text-align:center; padding:14px; background:rgba(79,178,134,.12); border-radius:10px}
+.resumo-num span{display:block; font-family:"Anton"; font-size:3rem; color:var(--verde-suave); line-height:1}
+.resumo-num small{text-transform:uppercase; letter-spacing:.1em; font-size:.7rem; color:var(--gelo-mid)}
+.resumo-prev{overflow:hidden}
+#preview{width:100%; border-collapse:collapse; font-size:.84rem; font-weight:300}
+#preview th{text-align:left; color:var(--verde-suave); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.08em; padding:4px 8px; border-bottom:1px solid var(--linha)}
+#preview td{padding:5px 8px; border-bottom:1px solid rgba(174,191,220,.08); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px}
+.resumo-mais{font-size:.78rem; color:var(--gelo-mid); margin-top:8px; font-weight:300}
+.resumo .btn-primario{grid-column:1/-1}
+
+/* ---------- BOTÕES ---------- */
+.btn-primario,.btn-fantasma,.btn-add,.btn-sortear,.btn-confirmar{
+  font-family:inherit; cursor:pointer; border:0; border-radius:11px;
+  font-weight:600; letter-spacing:.03em; transition:transform .15s, box-shadow .2s, background .2s, opacity .2s;
+}
+.btn-primario{
+  background:var(--verde); color:var(--carvao); padding:13px 24px; font-size:1rem;
+  box-shadow:0 10px 24px -10px rgba(79,178,134,.7);
+}
+.btn-primario:hover{transform:translateY(-2px); box-shadow:0 16px 30px -12px rgba(79,178,134,.8)}
+.btn-primario:disabled{background:rgba(174,191,220,.2); color:var(--gelo-mid); box-shadow:none; cursor:not-allowed; transform:none}
+.btn-fantasma{background:transparent; color:var(--gelo); border:1px solid var(--linha); padding:12px 22px; font-size:.95rem}
+.btn-fantasma:hover{background:rgba(255,255,255,.06); border-color:var(--gelo-mid)}
+.acoes-rodape{display:flex; justify-content:space-between; gap:12px; margin-top:30px; flex-wrap:wrap}
+
+/* ---------- BRINDES ---------- */
+.brinde-form{
+  display:grid; grid-template-columns:auto 1fr 90px auto; gap:12px; align-items:center;
+  background:rgba(255,255,255,.04); border:1px solid var(--linha); border-radius:var(--raio); padding:16px;
+}
+.tipo-seletor{display:flex; gap:6px}
+.tipo{
+  font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:3px;
+  background:rgba(255,255,255,.05); border:1px solid var(--linha); color:var(--gelo-mid);
+  border-radius:10px; padding:8px 11px; cursor:pointer; font-size:.72rem; font-weight:500;
+  transition:all .16s;
+}
+.tipo svg{width:22px; height:22px}
+.tipo[aria-pressed="true"]{background:var(--azul); color:#fff; border-color:var(--verde)}
+.tipo[data-tipo="moto"][aria-pressed="true"]{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); color:var(--carvao); border-color:var(--ouro)}
+.campo{
+  font-family:inherit; background:rgba(10,23,51,.55); border:1px solid var(--linha); color:var(--gelo);
+  border-radius:10px; padding:12px 14px; font-size:.95rem; width:100%;
+}
+.campo:focus{outline:none; border-color:var(--verde); box-shadow:0 0 0 3px rgba(79,178,134,.18)}
+.campo-qtd{text-align:center}
+.btn-add{background:var(--azul); color:#fff; padding:12px 16px; display:flex; align-items:center; gap:6px; font-size:.9rem}
+.btn-add svg{width:17px; height:17px}
+.btn-add:hover{background:#2a63c4}
+
+.lista-brindes{list-style:none; margin-top:16px; display:grid; gap:10px}
+.brinde-item{
+  display:flex; align-items:center; gap:14px;
+  background:rgba(255,255,255,.04); border:1px solid var(--linha); border-radius:12px; padding:13px 16px;
+  animation:entra .3s ease both;
+}
+.brinde-item .bi-icone{width:38px; height:38px; flex:none; display:grid; place-items:center; background:rgba(33,81,163,.45); border-radius:9px; color:var(--verde-suave)}
+.brinde-item .bi-icone svg{width:22px; height:22px}
+.brinde-item.moto .bi-icone{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); color:var(--carvao)}
+.bi-nome{font-weight:600; font-size:1rem}
+.bi-tipo{font-size:.74rem; color:var(--gelo-mid); text-transform:uppercase; letter-spacing:.08em; font-weight:300}
+.bi-meio{flex:1; min-width:0}
+.bi-qtd{font-family:"Anton"; font-size:1.5rem; color:var(--verde-suave); min-width:34px; text-align:center}
+.brinde-item.moto .bi-qtd{color:var(--ouro)}
+.bi-qtd small{font-family:"Oswald"; font-size:.6rem; display:block; color:var(--gelo-mid); letter-spacing:.1em}
+.bi-remover{background:transparent; border:0; color:var(--gelo-mid); cursor:pointer; padding:6px; border-radius:8px; transition:.15s}
+.bi-remover svg{width:20px; height:20px}
+.bi-remover:hover{color:#ffb4a8; background:rgba(255,180,168,.1)}
+.vazio{text-align:center; color:var(--gelo-mid); font-weight:300; padding:30px; font-style:italic}
+
+/* ---------- MODO APRESENTAÇÃO ---------- */
+body.modo-apresentacao .topo{display:none}
+body.modo-apresentacao main{padding-top:10px}
+body.modo-apresentacao .palco-topo{display:none}
+body.modo-apresentacao .tela-palco.ativa{min-height:100vh}
+body.modo-apresentacao .jumbotron{border-radius:0; min-height:70vh}
+.btn-sair-apresentacao{
+  display:none; position:fixed; top:14px; right:14px; z-index:300;
+  background:rgba(12,31,71,.85); border:1px solid var(--linha); color:var(--gelo-mid);
+  padding:8px 16px; border-radius:8px; font-family:inherit; font-size:.8rem;
+  cursor:pointer; backdrop-filter:blur(6px); transition:.2s;
+}
+.btn-sair-apresentacao:hover{background:rgba(33,81,163,.9); color:#fff}
+body.modo-apresentacao .btn-sair-apresentacao{display:block}
+
+/* ---------- PALCO / SORTEIO ---------- */
+.tela-palco.ativa{display:flex; flex-direction:column; min-height:calc(100vh - 160px)}
+.palco-topo{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:18px}
+.brinde-atual-wrap{display:flex; flex-direction:column; gap:5px}
+.brinde-atual-rotulo{text-transform:uppercase; letter-spacing:.16em; font-size:.68rem; color:var(--verde-suave); font-weight:600}
+.brinde-atual{
+  font-family:inherit; font-size:1.05rem; font-weight:600; color:var(--gelo);
+  background:rgba(10,23,51,.6); border:1px solid var(--linha); border-radius:10px; padding:11px 16px; cursor:pointer; min-width:220px;
+}
+.brinde-atual:focus{outline:none; border-color:var(--verde)}
+.contador-wrap{display:flex; gap:18px; align-items:center}
+.contador-stat{text-align:center; display:flex; flex-direction:column; align-items:center; gap:1px}
+.contador-stat span{font-family:"Anton"; color:var(--verde-suave); font-size:1.4rem; line-height:1}
+.contador-stat small{text-transform:uppercase; letter-spacing:.1em; font-size:.6rem; color:var(--gelo-mid); font-weight:600}
+
+/* jumbotron — pele híbrida: placar de LED (01) + arena imersiva (03) */
+.jumbotron{
+  position:relative; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  text-align:center; gap:12px; padding:48px 24px; overflow:hidden;
+  background:
+    radial-gradient(120% 90% at 50% 6%, rgba(42,95,192,.45), transparent 60%),
+    linear-gradient(165deg, rgba(12,31,71,.92), rgba(20,48,106,.6));
+  border:1px solid var(--linha); border-radius:20px;
+  box-shadow:var(--sombra), inset 0 0 90px rgba(0,0,0,.4);
+  transition:box-shadow .4s, border-color .4s;
+}
+/* camada 1 — grade de LED (direção 01), com máscara radial pra sumir nas bordas */
+.jumbotron::before{
+  content:""; position:absolute; inset:0; pointer-events:none; opacity:.55; z-index:0;
+  background-image:radial-gradient(rgba(158,206,176,.18) 1px, transparent 1.5px);
+  background-size:22px 22px;
+  -webkit-mask-image:radial-gradient(120% 80% at 50% 32%, #000 50%, transparent 85%);
+          mask-image:radial-gradient(120% 80% at 50% 32%, #000 50%, transparent 85%);
+}
+/* camada 2 — faixa de gramado na base (direção 03) */
+.jumbotron::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:92px; pointer-events:none; opacity:.5; z-index:0;
+  background:repeating-linear-gradient(90deg, rgba(79,178,134,.18) 0 46px, rgba(79,178,134,.06) 46px 92px);
+  -webkit-mask-image:linear-gradient(to top, #000, transparent);
+          mask-image:linear-gradient(to top, #000, transparent);
+  transition:opacity .4s;
+}
+.placar-luzes{
+  position:absolute; inset:0; opacity:.6; pointer-events:none; z-index:0;
+  background:radial-gradient(60% 50% at 50% 0%, rgba(79,178,134,.22), transparent 70%);
+  transition:background .4s, opacity .4s;
+}
+/* controles do palco (lote + velocidade + som + apresentação) */
+.palco-controles{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  background:rgba(255,255,255,.04); border:1px solid var(--linha); border-radius:12px; padding:10px 14px;
+}
+.controle-wrap{display:flex; align-items:center; gap:7px}
+.controle-rotulo{font-size:.65rem; text-transform:uppercase; letter-spacing:.1em; color:var(--gelo-mid); font-weight:600; white-space:nowrap}
+.controle-valor{font-size:.72rem; color:var(--verde-suave); font-weight:600; min-width:60px}
+.campo-mini{
+  width:56px; padding:7px 8px; text-align:center; font-size:.9rem;
+  background:rgba(10,23,51,.6); border:1px solid var(--linha); color:var(--gelo); border-radius:8px;
+}
+.campo-mini:focus{outline:none; border-color:var(--verde)}
+.campo-mini:disabled{opacity:.4; cursor:not-allowed}
+.slider-tensao{
+  -webkit-appearance:none; appearance:none; width:90px; height:4px;
+  background:rgba(174,191,220,.2); border-radius:2px; cursor:pointer;
+}
+.slider-tensao::-webkit-slider-thumb{
+  -webkit-appearance:none; width:14px; height:14px; border-radius:50%;
+  background:var(--verde); cursor:pointer; transition:.15s;
+}
+.slider-tensao::-webkit-slider-thumb:hover{background:var(--verde-suave); transform:scale(1.2)}
+.btn-controle{
+  font-family:inherit; background:rgba(255,255,255,.06); border:1px solid var(--linha);
+  color:var(--gelo); border-radius:8px; padding:7px 11px; cursor:pointer; font-size:1rem;
+  transition:.16s; line-height:1;
+}
+.btn-controle:hover{background:rgba(255,255,255,.12); border-color:var(--gelo-mid)}
+.btn-controle[aria-pressed="true"]{background:rgba(79,178,134,.15); border-color:var(--verde); color:var(--verde-suave)}
+.btn-controle-dest{border-color:rgba(79,178,134,.3)}
+.btn-controle-dest:hover{border-color:var(--verde)}
+.btn-sm{padding:8px 14px; font-size:.82rem}
+
+/* conteúdo sempre acima das camadas */
+.jumbo-rotulo,.jumbo-nome,.jumbo-meta,.jumbo-brinde,.jumbo-lista{position:relative; z-index:1}
+
+.jumbo-rotulo{text-transform:uppercase; letter-spacing:.22em; font-size:.8rem; color:var(--gelo-mid); font-weight:600; transition:color .3s}
+.jumbo-nome{
+  font-family:"Anton"; text-transform:uppercase; line-height:.92; letter-spacing:.01em;
+  font-size:clamp(2.4rem,9vw,6rem); color:var(--gelo); max-width:100%;
+  word-break:break-word; min-height:1.1em;
+}
+.jumbo-meta{font-size:1.05rem; color:var(--gelo-mid); font-weight:300; min-height:1.3em; letter-spacing:.03em}
+.jumbo-brinde{display:flex; align-items:center; gap:10px; margin-top:10px; font-size:1.1rem; font-weight:600; color:var(--ouro)}
+.jumbo-brinde svg{width:30px; height:30px}
+
+/* lista de ganhadores em lote */
+.jumbo-lista{
+  width:100%; max-width:580px; display:flex; flex-direction:column; gap:6px;
+  max-height:340px; overflow-y:auto; padding:4px 0;
+}
+.lote-item{
+  display:flex; align-items:baseline; gap:12px;
+  animation:revela .4s cubic-bezier(.2,1.4,.4,1) both;
+  border-bottom:1px solid var(--linha); padding:6px 0;
+}
+.lote-item:last-child{border-bottom:none}
+.lote-num{font-family:"Anton"; color:var(--ouro); font-size:1.1rem; min-width:22px; text-align:right; flex:none}
+.lote-nome{font-family:"Anton"; color:#fff; font-size:1.3rem; text-transform:uppercase; flex:1; line-height:1.1}
+.lote-meta{font-size:.8rem; color:var(--gelo-mid); font-weight:300; flex:none; white-space:nowrap}
+
+/* contagem regressiva da moto (build-up) */
+.jumbotron.contagem .jumbo-rotulo{color:var(--ouro)}
+.jumbotron.contagem .jumbo-nome{
+  font-size:clamp(5rem,20vw,12rem); color:var(--ouro);
+  text-shadow:0 0 40px rgba(245,196,81,.45);
+  animation:pulso-contagem .85s ease both;
+}
+@keyframes pulso-contagem{0%{transform:scale(.4);opacity:0}45%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:.55}}
+.jumbotron.moto-build{background:
+  radial-gradient(120% 90% at 50% 6%, rgba(90,66,12,.45), transparent 60%),
+  linear-gradient(165deg, rgba(34,26,4,.7), rgba(20,48,106,.55))}
+
+/* embaralhando */
+.jumbotron.embaralhando .jumbo-rotulo{color:var(--verde-suave)}
+.jumbotron.embaralhando .jumbo-nome{color:var(--verde-suave); animation:tremor .08s linear infinite}
+@keyframes tremor{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+
+/* vencedor */
+.jumbotron.vencedor{border-color:var(--ouro); box-shadow:0 0 0 1px var(--ouro), 0 0 80px -8px rgba(245,196,81,.55), inset 0 0 90px rgba(0,0,0,.35)}
+.jumbotron.vencedor .jumbo-rotulo{       /* pílula dourada (direção 03) */
+  color:var(--ouro); align-self:center;
+  border:1px solid rgba(245,196,81,.5); border-radius:999px; padding:6px 18px;
+  background:rgba(245,196,81,.08);
+}
+.jumbotron.vencedor .jumbo-nome{color:#fff; animation:revela .55s cubic-bezier(.2,1.4,.4,1) both; text-shadow:0 0 30px rgba(245,196,81,.6), 0 0 60px rgba(245,196,81,.22)}
+.jumbotron.vencedor .placar-luzes{background:radial-gradient(60% 60% at 50% 42%, rgba(245,196,81,.32), transparent 70%); opacity:1}
+.jumbotron.vencedor::after{opacity:.85}   /* gramado acende */
+@keyframes revela{from{transform:scale(.7); opacity:0; filter:blur(8px)} to{transform:none; opacity:1; filter:none}}
+.jumbotron.moto-final.vencedor{background:
+  radial-gradient(120% 90% at 50% 8%, rgba(90,66,12,.5), transparent 60%),
+  linear-gradient(165deg, rgba(40,30,4,.7), rgba(20,48,106,.55))}
+
+.palco-acoes{display:flex; flex-direction:column; align-items:center; gap:14px; margin-top:22px}
+.btn-sortear{
+  background:linear-gradient(135deg,var(--verde),#3d9b72); color:var(--carvao);
+  font-size:1.35rem; font-family:"Anton"; letter-spacing:.06em; text-transform:uppercase;
+  padding:18px 60px; border-radius:14px; box-shadow:0 14px 36px -10px rgba(79,178,134,.7);
+}
+.btn-sortear:hover{transform:translateY(-3px); box-shadow:0 20px 44px -12px rgba(79,178,134,.85)}
+.btn-sortear:active{transform:translateY(0)}
+.btn-sortear:disabled{opacity:.5; cursor:wait; transform:none}
+.btn-sortear.moto{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); box-shadow:0 14px 36px -10px rgba(245,196,81,.7)}
+.acoes-ganhador{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+.btn-confirmar{background:var(--ouro); color:var(--carvao); padding:13px 28px; font-size:1rem; box-shadow:0 10px 24px -10px rgba(245,196,81,.7)}
+.btn-confirmar:hover{transform:translateY(-2px)}
+
+.confete{position:fixed; inset:0; pointer-events:none; z-index:50; display:none}
+.confete.ativo{display:block}
+
+/* ---------- CABEÇALHO GANHADORES ---------- */
+.tela-cabeca-row{display:flex; align-items:flex-start; justify-content:space-between; gap:14px}
+.tela-cabeca-row > div h2{margin:0}
+
+/* ---------- BUSCA GANHADORES ---------- */
+.busca-wrap{margin-bottom:14px}
+.campo-busca{max-width:100%; font-size:.92rem; padding:10px 14px}
+
+/* ---------- AÇÕES GANHADORES ---------- */
+.acoes-rodape-ganhadores{flex-direction:column; gap:14px}
+.acoes-grupo{display:flex; gap:10px; flex-wrap:wrap}
+.acoes-grupo .btn-primario,.acoes-grupo .btn-fantasma{flex:1; min-width:120px; text-align:center; justify-content:center}
+.btn-perigo{color:#ffb4a8; border-color:rgba(255,180,168,.3)}
+.btn-perigo:hover{background:rgba(255,180,168,.1); border-color:#ffb4a8}
+
+/* ---------- TABELA GANHADORES ---------- */
+.tabela-ganhadores{width:100%; border-collapse:collapse; font-weight:300; font-size:.92rem; margin-top:6px}
+.tabela-ganhadores th{text-align:left; color:var(--verde-suave); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.08em; padding:10px; border-bottom:1px solid var(--linha)}
+.tabela-ganhadores td{padding:11px 10px; border-bottom:1px solid rgba(174,191,220,.1)}
+.tabela-ganhadores tr.moto td{background:rgba(245,196,81,.08)}
+.tabela-ganhadores tr.moto td:nth-child(5){color:var(--ouro); font-weight:600}
+.tg-num{font-family:"Anton"; color:var(--gelo-mid)}
+
+/* ---------- MODAL HISTÓRICO ---------- */
+.historico-dlg{
+  border:1px solid var(--linha); border-radius:18px; padding:0; max-width:520px; width:90vw;
+  background:var(--azul-noite); color:var(--gelo); box-shadow:var(--sombra); max-height:80vh;
+  display:flex; flex-direction:column;
+}
+.historico-dlg::backdrop{background:rgba(6,15,38,.75); backdrop-filter:blur(4px)}
+.historico-header{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 22px 14px; border-bottom:1px solid var(--linha); flex:none;
+}
+.historico-header h3{font-family:"Anton"; font-size:1.4rem; letter-spacing:.02em}
+.btn-fechar-dlg{
+  background:transparent; border:0; color:var(--gelo-mid); cursor:pointer;
+  font-size:1.2rem; padding:4px 8px; border-radius:6px; line-height:1;
+}
+.btn-fechar-dlg:hover{color:#fff; background:rgba(255,255,255,.08)}
+.historico-lista{flex:1; overflow-y:auto; padding:14px 22px 22px}
+.hist-item{border:1px solid var(--linha); border-radius:12px; margin-bottom:10px; overflow:hidden}
+.hist-cabeca{
+  display:flex; align-items:center; gap:10px; padding:12px 14px;
+  background:rgba(255,255,255,.03); cursor:default; flex-wrap:wrap;
+}
+.hist-nome{font-weight:600; flex:1; min-width:120px}
+.hist-data{font-size:.75rem; color:var(--gelo-mid); font-weight:300}
+.hist-badge{
+  background:rgba(79,178,134,.15); border:1px solid rgba(79,178,134,.3);
+  color:var(--verde-suave); border-radius:999px; padding:3px 10px; font-size:.72rem; font-weight:600;
+}
+.hist-toggle{
+  background:transparent; border:0; color:var(--gelo-mid); cursor:pointer;
+  font-size:.9rem; padding:4px 6px; border-radius:6px; margin-left:auto; flex:none;
+}
+.hist-toggle:hover{color:#fff}
+.hist-detalhe{padding:12px 14px; border-top:1px solid var(--linha); background:rgba(0,0,0,.15)}
+.hist-tipos{font-size:.82rem; color:var(--gelo-mid); margin-bottom:10px; font-weight:300}
+.hist-lista-nomes{font-size:.85rem; font-weight:300; padding-left:18px; margin-bottom:12px; max-height:160px; overflow-y:auto}
+.hist-lista-nomes li{padding:3px 0; border-bottom:1px solid rgba(174,191,220,.06)}
+.hist-lista-nomes b{font-weight:600; color:var(--gelo)}
+.hist-export-btn{padding:7px 14px; font-size:.78rem}
+
+/* ---------- TOAST ---------- */
+.toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(16px);
+  background:rgba(20,48,106,.96); border:1px solid var(--linha); border-radius:10px;
+  padding:11px 22px; font-size:.9rem; color:var(--gelo); z-index:200;
+  opacity:0; transition:opacity .25s, transform .25s; pointer-events:none;
+  white-space:nowrap; max-width:90vw; text-align:center;
+}
+.toast.visivel{opacity:1; transform:translateX(-50%) translateY(0)}
+.toast.toast-ok{border-color:var(--verde); color:var(--verde-suave)}
+.toast.toast-aviso{border-color:var(--ouro); color:var(--ouro)}
+.toast.toast-erro{border-color:#ffb4a8; color:#ffb4a8}
+
+/* ---------- INDICADOR AUTO-SAVE ---------- */
+.salvo-indicator{
+  font-size:.72rem; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--verde-suave); opacity:0; transition:opacity .4s; user-select:none;
+}
+.salvo-indicator.visivel{opacity:.7}
+
+/* ---------- DIÁLOGO ---------- */
+.confirmador{
+  border:1px solid var(--linha); border-radius:16px; padding:26px; max-width:380px;
+  background:var(--azul-prof); color:var(--gelo); box-shadow:var(--sombra);
+}
+.confirmador::backdrop{background:rgba(6,15,38,.7); backdrop-filter:blur(3px)}
+#confirmador-msg{font-size:1.05rem; line-height:1.5; font-weight:300; margin-bottom:20px}
+#confirmador-msg b{font-weight:600; color:var(--ouro)}
+.confirmador-btns{display:flex; gap:10px; justify-content:flex-end}
+
+/* ---------- RESPONSIVO ---------- */
+@media (max-width:760px){
+  .topo{padding:12px 16px}
+  .topo-sub{display:none}
+  .passo{font-size:0; padding:8px; gap:0}
+  .passo b{font-size:.78rem; width:24px; height:24px}
+  .salvo-indicator{display:none}
+  .resumo{grid-template-columns:1fr}
+  .brinde-form{grid-template-columns:1fr 1fr}
+  .tipo-seletor{grid-column:1/-1; justify-content:space-between}
+  .tipo{flex:1}
+  #brinde-nome{grid-column:1/-1}
+  .btn-add{grid-column:1/-1; justify-content:center}
+  .palco-controles{gap:8px; padding:8px 10px}
+  .slider-tensao{width:70px}
+  .controle-valor{min-width:46px; font-size:.68rem}
+  .contador-wrap{gap:12px}
+  .contador-stat span{font-size:1.1rem}
+  .tela-cabeca-row{flex-direction:column; gap:10px}
+  .acoes-rodape{flex-direction:column-reverse}
+  .acoes-rodape button{width:100%}
+  .acoes-grupo{flex-direction:column}
+  .acoes-grupo .btn-primario,.acoes-grupo .btn-fantasma{min-width:unset}
+  .btn-sortear{width:100%; padding:18px}
+}
+
+/* ---------- MOBILE LANDSCAPE ---------- */
+@media (max-height:500px) and (orientation:landscape){
+  .hero{padding:10px 0 16px}
+  .titulo-hero{font-size:clamp(2.2rem,8vw,4rem)}
+  .jumbotron{padding:24px 16px; gap:8px}
+  .jumbo-nome{font-size:clamp(2rem,7vw,4rem)}
+  .btn-sortear{font-size:1.1rem; padding:14px 40px}
+  .tela-palco.ativa{min-height:auto}
+}
+
+/* ---------- IMPRESSÃO ---------- */
+@media print{
+  .topo,.passos,.busca-wrap,.acoes-rodape,#ganhadores-vazio,.toast,.salvo-indicator,
+  #tela-importar,#tela-brindes,#tela-sorteio,#confirmador{display:none !important}
+  body{background:#fff; color:#111; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  body::before{display:none}
+  main{max-width:100%; padding:0}
+  #tela-ganhadores{display:block !important}
+  #ganhadores-wrap{display:block !important}
+  .tabela-ganhadores{font-size:.85rem; border-collapse:collapse; width:100%}
+  .tabela-ganhadores th{background:#2151A3; color:#fff; padding:8px; text-align:left}
+  .tabela-ganhadores td{padding:7px 8px; border-bottom:1px solid #ddd}
+  .tabela-ganhadores tr.moto td{background:#fffbe6}
+  .tabela-ganhadores tr.moto td:nth-child(5){font-weight:700}
+  .tela-cabeca h2{color:#2151A3; font-size:1.8rem}
+  .tela-cabeca p{color:#555}
+}
+
+/* ---------- ACESSIBILIDADE / MOVIMENTO ---------- */
+:focus-visible{outline:2px solid var(--verde); outline-offset:2px}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}
+  .jumbotron.embaralhando .jumbo-nome{animation:none}
+}
