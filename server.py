@@ -37,9 +37,10 @@ from jose import jwt, JWTError
 
 BASE_DIR = Path(__file__).resolve().parent
 
-SECRET_KEY = os.getenv("SECRET_KEY") or "dev-" + secrets.token_hex(16)
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "")
-APP_ENV = os.getenv("APP_ENV", "development")
+SECRET_KEY = (os.getenv("SECRET_KEY") or "dev-" + secrets.token_hex(16)).strip()
+# .strip() defende contra espaço/quebra de linha colados por acidente no painel do Render
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH", "").strip()
+APP_ENV = os.getenv("APP_ENV", "development").strip()
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_HORAS = int(os.getenv("TOKEN_EXPIRE_HORAS", "12"))
 COOKIE_NAME = "sorteio_token"
@@ -49,6 +50,13 @@ if APP_ENV == "production" and not ADMIN_PASSWORD_HASH:
         "ADMIN_PASSWORD_HASH não definido em produção. "
         "Gere com: python gerar_hash.py"
     )
+
+# Diagnóstico no log de start — nunca expõe a senha/hash, só formato e tamanho.
+# Útil pra confirmar que a env var chegou íntegra sem precisar revelar o valor.
+print(
+    f"[auth] ADMIN_PASSWORD_HASH: {len(ADMIN_PASSWORD_HASH)} chars, "
+    f"prefixo={'$pbkdf2-sha256$' if ADMIN_PASSWORD_HASH.startswith('$pbkdf2-sha256$') else 'INESPERADO'}"
+)
 
 pwd_ctx = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 app = FastAPI(title="Sorteio EcoUrbis — Auth Gate")
