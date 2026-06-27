@@ -8,16 +8,13 @@
 
 const $  = (s, e = document) => e.querySelector(s);
 const $$ = (s, e = document) => [...e.querySelectorAll(s)];
-const CHAVE      = 'ecourbis_sorteio_v1';
+const CHAVE      = 'ecourbis_sorteio_v2';
 const CHAVE_HIST = 'ecourbis_historico_v1';
-
-const ICONES = { bola:'#ic-bola', camisa:'#ic-camisa', moto:'#ic-moto' };
-const ROTULO = { bola:'Bola', camisa:'Camisa', moto:'Moto' };
+const CHAVE_V1_LEGADA = 'ecourbis_sorteio_v1';   // schema antigo (tipo bola/camisa/moto) — não migrado automaticamente
 
 /* ---------- Estado ---------- */
 let dadosCorruptos = false;
 let estado = carregar() || { participantes:[], brindes:[], ganhadores:[] };
-let tipoSelecionado  = 'bola';
 let ganhadorPendente = null;   // {participante, brinde} — sorteio individual
 let lotePendente     = null;   // {participantes, brinde} — sorteio em lote
 let sorteando        = false;
@@ -27,6 +24,9 @@ let _toastTimer      = null;
 let somAtivo          = true;
 let velocidadeSorteio = 1.0;   // multiplicador de delay da animação
 let _audioCtx         = null;
+
+/* ícone genérico do brinde: prêmio final ganha o troféu, o resto ganha o presente */
+function iconeBrinde(b){ return b && b.final ? '#ic-trofeu' : '#ic-presente'; }
 
 /* ============================================================
    PERSISTÊNCIA
@@ -85,7 +85,7 @@ function getAudioCtx(){
 }
 
 function tocarTick(){
-  if (!somAtivo || window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  if (!somAtivo) return;
   const ctx = getAudioCtx(); if (!ctx) return;
   try {
     const o = ctx.createOscillator(), g = ctx.createGain();
@@ -96,6 +96,20 @@ function tocarTick(){
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.055);
     o.start(); o.stop(ctx.currentTime + 0.055);
   } catch {}
+}
+
+/* toca ticks em intervalo fixo durante a animação da roleta — independe de DOM/nomes */
+function tocarTicksDurante(duracaoMs){
+  if (!somAtivo) return;
+  const intervalo = 130;
+  let elapsed = 0;
+  const passo = () => {
+    if (elapsed >= duracaoMs - intervalo * 0.5) return;
+    tocarTick();
+    elapsed += intervalo;
+    setTimeout(passo, intervalo);
+  };
+  passo();
 }
 
 function tocarBeepContagem(n){
@@ -112,22 +126,22 @@ function tocarBeepContagem(n){
   } catch {}
 }
 
-function tocarFanfarra(ehMoto){
+function tocarFanfarra(ehFinal){
   if (!somAtivo) return;
   const ctx = getAudioCtx(); if (!ctx) return;
   try {
-    const seq = ehMoto
+    const seq = ehFinal
       ? [261.63, 329.63, 392, 523.25, 659.25, 784]
       : [392, 523.25, 659.25];
-    const dt = ehMoto ? 0.13 : 0.11;
+    const dt = ehFinal ? 0.13 : 0.11;
     seq.forEach((freq, i) => {
       const o = ctx.createOscillator(), g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
       o.frequency.value = freq;
-      o.type = ehMoto ? 'sawtooth' : 'triangle';
+      o.type = ehFinal ? 'sawtooth' : 'triangle';
       const t0 = ctx.currentTime + i * dt;
       g.gain.setValueAtTime(0, t0);
-      g.gain.linearRampToValueAtTime(ehMoto ? 0.32 : 0.22, t0 + 0.04);
+      g.gain.linearRampToValueAtTime(ehFinal ? 0.32 : 0.22, t0 + 0.04);
       g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.48);
       o.start(t0); o.stop(t0 + 0.5);
     });
@@ -142,6 +156,8 @@ function elegiveis(){ const fora = idsGanhadores(); return estado.participantes.
 
 /* ============================================================
    RNG criptográfico — sorteio justo e defensável
+   Custo é O(1) por sorteio (não depende do tamanho da lista),
+   então funciona igual com 50 ou 50.000 participantes.
    ============================================================ */
 function inteiroSeguro(max){
   if (max <= 0) return 0;
@@ -267,23 +283,19 @@ function mostrarResumo(){
 }
 
 /* ============================================================
-   TELA 2 · BRINDES
+   TELA 2 · BRINDES (genérico — qualquer item, com flag de prêmio final)
    ============================================================ */
-$$('.tipo').forEach(b => b.addEventListener('click', () => {
-  tipoSelecionado = b.dataset.tipo;
-  $$('.tipo').forEach(x => x.setAttribute('aria-pressed', x === b));
-  const nomeInput = $('#brinde-nome');
-  if (!nomeInput.value) nomeInput.placeholder = 'Nome do brinde (ex.: ' + sugestao(tipoSelecionado) + ')';
-}));
-function sugestao(t){ return ({bola:'Bola oficial', camisa:'Camisa da seleção', moto:'Moto 0km'})[t]; }
-
 $('#add-brinde').addEventListener('click', () => {
-  const nome = $('#brinde-nome').value.trim() || ROTULO[tipoSelecionado];
-  const qtd  = Math.max(1, parseInt($('#brinde-qtd').value, 10) || 1);
-  estado.brindes.push({ id:'b' + Date.now(), tipo:tipoSelecionado, nome, qtd, sorteados:0 });
+  const campoNome = $('#brinde-nome');
+  const nome = campoNome.value.trim();
+  if (!nome){ mostrarToast('Digite o nome do brinde.', 'erro', 2200); campoNome.focus(); return; }
+  const qtd   = Math.max(1, parseInt($('#brinde-qtd').value, 10) || 1);
+  const final = $('#brinde-final')?.checked || false;
+  estado.brindes.push({ id:'b' + Date.now(), nome, qtd, sorteados:0, final });
   salvar();
-  $('#brinde-nome').value = '';
+  campoNome.value = '';
   $('#brinde-qtd').value = 1;
+  if ($('#brinde-final')) $('#brinde-final').checked = false;
   renderBrindes();
 });
 
@@ -291,11 +303,11 @@ function renderBrindes(){
   const ul = $('#lista-brindes'); ul.innerHTML = '';
   estado.brindes.forEach(b => {
     const li = document.createElement('li');
-    li.className = 'brinde-item' + (b.tipo === 'moto' ? ' moto' : '');
+    li.className = 'brinde-item' + (b.final ? ' final' : '');
     const restam = b.qtd - b.sorteados;
     li.innerHTML = `
-      <span class="bi-icone"><svg><use href="${ICONES[b.tipo]}"/></svg></span>
-      <span class="bi-meio"><span class="bi-nome">${esc(b.nome)}</span><br><span class="bi-tipo">${ROTULO[b.tipo]}</span></span>
+      <span class="bi-icone"><svg><use href="${iconeBrinde(b)}"/></svg></span>
+      <span class="bi-meio"><span class="bi-nome">${esc(b.nome)}</span>${b.final ? '<br><span class="bi-tipo">⭐ Prêmio final</span>' : ''}</span>
       <span class="bi-qtd">${restam}<small>de ${b.qtd}</small></span>
       <button class="bi-remover" aria-label="Remover ${esc(b.nome)}"><svg><use href="#ic-lixo"/></svg></button>`;
     li.querySelector('.bi-remover').addEventListener('click', () => {
@@ -367,7 +379,8 @@ function prepararSorteio(){
     disp.forEach(b => {
       const o = document.createElement('option');
       o.value = b.id;
-      o.textContent = `${ROTULO[b.tipo]} · ${b.nome} (${b.qtd - b.sorteados} restante${b.qtd-b.sorteados>1?'s':''})`;
+      const restantes = b.qtd - b.sorteados;
+      o.textContent = `${b.final ? '⭐ ' : ''}${b.nome} (${restantes} restante${restantes>1?'s':''})`;
       seletor.appendChild(o);
     });
   }
@@ -390,25 +403,25 @@ function atualizarContexto(){
   if (elGanhou) elGanhou.textContent = ganhou;
 
   const b = brindeAtual();
-  const ehMoto = b && b.tipo === 'moto';
-  btnSortear.classList.toggle('moto', !!ehMoto);
+  const ehFinal = !!(b && b.final);
+  btnSortear.classList.toggle('final', ehFinal);
 
-  /* lote: desativar para moto; limitar ao disponível */
+  /* lote: desativar para prêmio final; limitar ao disponível */
   const loteInput = document.getElementById('lote-qtd');
   if (loteInput){
-    if (ehMoto){ loteInput.value = 1; loteInput.disabled = true; }
+    if (ehFinal){ loteInput.value = 1; loteInput.disabled = true; }
     else {
       loteInput.disabled = false;
       const maxLote = Math.min(eleg, b ? b.qtd - b.sorteados : eleg);
       loteInput.max = maxLote;
-      if (parseInt(loteInput.value) > maxLote) loteInput.value = maxLote;
+      if (parseInt(loteInput.value) > maxLote) loteInput.value = Math.max(1, maxLote);
     }
   }
 
   /* texto do botão */
   const n = loteQtd();
-  if (ehMoto)     btnSortear.textContent = 'Sortear a Moto';
-  else if (n > 1) btnSortear.textContent = `Sortear ${n} ${b ? ROTULO[b.tipo] : ''}`.trim();
+  if (ehFinal)    btnSortear.textContent = 'Sortear Prêmio Final';
+  else if (n > 1) btnSortear.textContent = `Sortear ${n} × ${b ? b.nome : ''}`.trim();
   else            btnSortear.textContent = 'Sortear';
 
   const semPool = eleg === 0 || !b;
@@ -459,6 +472,16 @@ function iniciarSorteio(){
   else       iniciarSorteioSimples(pool, b);
 }
 
+/* ============================================================
+   Duração da animação — fixa (não depende do tamanho da lista de
+   participantes). A roleta é puramente visual: não cicla nomes
+   reais, então não tem como "travar" exibindo um nome parado.
+   ============================================================ */
+function duracaoSorteio(ehFinal, lote){
+  const base = lote ? 1700 : (ehFinal ? 2600 : 1900);
+  return Math.max(400, Math.round(base * velocidadeSorteio));
+}
+
 /* ---- SORTEIO INDIVIDUAL ---- */
 function iniciarSorteioSimples(pool, b){
   sorteando = true;
@@ -467,38 +490,29 @@ function iniciarSorteioSimples(pool, b){
   jMeta.textContent = '';
 
   const ganhador = escolher(pool);           // decisão tomada antes da animação
-  const ehMoto   = b.tipo === 'moto';
+  const ehFinal  = !!b.final;
   const semMov   = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
 
   const embaralhar = () => {
     jRotulo.textContent = 'Sorteando…';
     jNome.style.animation = '';
-    jNome.style.display = '';
+    jNome.style.display = 'none';            // a roleta assume a exibição visual
+    jMeta.textContent = '';
     const jLista = document.getElementById('jumbo-lista');
     if (jLista) jLista.hidden = true;
-    jumbo.className = 'jumbotron embaralhando' + (ehMoto ? ' moto-final' : '');
-    let i = 0;
-    const total = ehMoto ? 40 : 30;
-    const tick = () => {
-      jNome.textContent = pool[inteiroSeguro(pool.length)].nome.split(' ')[0];
-      tocarTick();
-      i++;
-      if (i < total){
-        const prog = i / total;
-        setTimeout(tick, (40 + prog * prog * 220) * velocidadeSorteio);
-      } else {
-        revelarSimples(ganhador, b, ehMoto);
-      }
-    };
-    tick();
+    jumbo.className = 'jumbotron embaralhando' + (ehFinal ? ' final' : '');
+    const duracao = duracaoSorteio(ehFinal, false);
+    tocarTicksDurante(duracao);
+    setTimeout(() => revelarSimples(ganhador, b, ehFinal), duracao);
   };
 
-  if (ehMoto && !semMov){
+  if (ehFinal && !semMov){
     jRotulo.textContent = 'Prêmio final';
     let n = 3;
     const passo = () => {
       if (n >= 1){
-        jumbo.className = 'jumbotron contagem moto-build';
+        jumbo.className = 'jumbotron contagem final-build';
+        jNome.style.display = '';
         jNome.textContent = String(n);
         jNome.style.animation = 'none'; void jNome.offsetWidth; jNome.style.animation = '';
         tocarBeepContagem(n);
@@ -514,21 +528,22 @@ function iniciarSorteioSimples(pool, b){
   }
 }
 
-function revelarSimples(p, b, ehMoto){
+function revelarSimples(p, b, ehFinal){
+  jNome.style.display = '';
   jNome.style.animation = '';
-  jumbo.className = 'jumbotron vencedor' + (ehMoto ? ' moto-final' : '');
-  jRotulo.textContent = ehMoto ? '🏆 Ganhador da Moto' : 'Ganhador';
+  jumbo.className = 'jumbotron vencedor' + (ehFinal ? ' final' : '');
+  jRotulo.textContent = ehFinal ? '🏆 Ganhador do Prêmio Final' : 'Ganhador';
   jNome.textContent = p.nome;
   jMeta.textContent = [p.matricula && 'mat. ' + p.matricula, p.funcao].filter(Boolean).join(' · ');
   jBrinde.hidden = false;
-  jBrinde.querySelector('use').setAttribute('href', ICONES[b.tipo]);
+  jBrinde.querySelector('use').setAttribute('href', iconeBrinde(b));
   jBrinde.querySelector('span').textContent = b.nome;
   btnSortear.hidden = true;
   $('#acoes-ganhador').hidden = false;
   ganhadorPendente = { participante:p, brinde:b };
   sorteando = false;
-  tocarFanfarra(ehMoto);
-  dispararConfete(ehMoto);
+  tocarFanfarra(ehFinal);
+  dispararConfete(ehFinal);
 }
 
 /* ---- SORTEIO EM LOTE ---- */
@@ -538,7 +553,7 @@ function iniciarSorteioLote(pool, b, n){
   jBrinde.hidden = true;
   jMeta.textContent = '';
 
-  /* escolhe n vencedores sem reposição usando crypto RNG */
+  /* escolhe n vencedores sem reposição usando crypto RNG — O(n) no tamanho do lote, não da lista total */
   const copia = [...pool];
   const vencedores = [];
   for (let i = 0; i < n && copia.length > 0; i++){
@@ -546,28 +561,15 @@ function iniciarSorteioLote(pool, b, n){
     vencedores.push(copia.splice(idx, 1)[0]);
   }
 
-  /* animação compacta */
   jRotulo.textContent = `Sorteando ${n} ganhadores…`;
-  jNome.style.animation = '';
-  jNome.style.display = '';
+  jNome.style.display = 'none';
   const jLista = document.getElementById('jumbo-lista');
   if (jLista) jLista.hidden = true;
   jumbo.className = 'jumbotron embaralhando';
 
-  let i = 0;
-  const totalTicks = 20;
-  const tick = () => {
-    jNome.textContent = pool[inteiroSeguro(pool.length)].nome.split(' ')[0];
-    tocarTick();
-    i++;
-    if (i < totalTicks){
-      const prog = i / totalTicks;
-      setTimeout(tick, (30 + prog * prog * 150) * velocidadeSorteio);
-    } else {
-      revelarLote(vencedores, b);
-    }
-  };
-  tick();
+  const duracao = duracaoSorteio(false, true);
+  tocarTicksDurante(duracao);
+  setTimeout(() => revelarLote(vencedores, b), duracao);
 }
 
 function revelarLote(vencedores, b){
@@ -592,7 +594,7 @@ function revelarLote(vencedores, b){
   const plural = vencedores.length > 1;
   jRotulo.textContent = `${vencedores.length} Ganhador${plural ? 'es' : ''} · ${esc(b.nome)}`;
   jBrinde.hidden = false;
-  jBrinde.querySelector('use').setAttribute('href', ICONES[b.tipo]);
+  jBrinde.querySelector('use').setAttribute('href', iconeBrinde(b));
   jBrinde.querySelector('span').textContent = `${b.nome} × ${vencedores.length}`;
 
   const btnConfirmar = $('#btn-confirmar');
@@ -613,14 +615,14 @@ function confirmarGanhador(){
   if (!ganhadorPendente) return;
   const { participante, brinde } = ganhadorPendente;
   const acao = () => {
-    estado.ganhadores.push({ participante, brinde:{ tipo:brinde.tipo, nome:brinde.nome }, ts:Date.now() });
+    estado.ganhadores.push({ participante, brinde:{ nome:brinde.nome, final:!!brinde.final }, ts:Date.now() });
     const b = estado.brindes.find(x => x.id === brinde.id);
     if (b) b.sorteados++;
     salvar();
     prepararSorteio();
   };
-  if (brinde.tipo === 'moto'){
-    confirmar(`Confirmar <b>${esc(participante.nome)}</b> como ganhador da moto <b>${esc(brinde.nome)}</b>? Esta ação entra no registro oficial.`, acao);
+  if (brinde.final){
+    confirmar(`Confirmar <b>${esc(participante.nome)}</b> como ganhador do prêmio final <b>${esc(brinde.nome)}</b>? Esta ação entra no registro oficial.`, acao);
   } else { acao(); }
 }
 
@@ -629,7 +631,7 @@ function confirmarLote(){
   const { participantes, brinde } = lotePendente;
   const ts = Date.now();
   participantes.forEach(p => {
-    estado.ganhadores.push({ participante:p, brinde:{ tipo:brinde.tipo, nome:brinde.nome }, ts });
+    estado.ganhadores.push({ participante:p, brinde:{ nome:brinde.nome, final:!!brinde.final }, ts });
   });
   const b = estado.brindes.find(x => x.id === brinde.id);
   if (b) b.sorteados += participantes.length;
@@ -646,14 +648,14 @@ const ctx    = canvas.getContext('2d');
 let particulas  = [];
 let animConfete = null;
 
-function dispararConfete(ehMoto){
+function dispararConfete(ehFinal){
   if (window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
   canvas.classList.add('ativo');
   canvas.width = innerWidth; canvas.height = innerHeight;
-  const cores = ehMoto
+  const cores = ehFinal
     ? ['#F5C451','#e0a92e','#ffffff','#9ECEB0']
     : ['#4FB286','#9ECEB0','#2151A3','#EAF1FB','#F5C451'];
-  const n = ehMoto ? 220 : 140;
+  const n = ehFinal ? 220 : 140;
   particulas = Array.from({length:n}, () => ({
     x:Math.random()*canvas.width,
     y:-20 - Math.random()*canvas.height*0.4,
@@ -704,7 +706,7 @@ function renderGanhadores(){
   const tb = $('#tbody-ganhadores'); tb.innerHTML = '';
   estado.ganhadores.forEach((g, i) => {
     const tr = document.createElement('tr');
-    if (g.brinde.tipo === 'moto') tr.className = 'moto';
+    if (g.brinde.final) tr.className = 'final';
     const hora = new Date(g.ts).toLocaleString('pt-BR');
     tr.innerHTML = `
       <td class="tg-num">${i+1}</td>
@@ -727,10 +729,10 @@ document.getElementById('busca-ganhador')?.addEventListener('input', e => {
 
 /* exportar CSV */
 $('#export-csv').addEventListener('click', () => {
-  const linhas = [['#','Nome','Matrícula','Função','Brinde','Tipo','Data e hora']];
+  const linhas = [['#','Nome','Matrícula','Função','Brinde','Prêmio Final','Data e hora']];
   estado.ganhadores.forEach((g,i) => linhas.push([
     i+1, g.participante.nome, g.participante.matricula||'', g.participante.funcao||'',
-    g.brinde.nome, ROTULO[g.brinde.tipo], new Date(g.ts).toLocaleString('pt-BR')
+    g.brinde.nome, g.brinde.final ? 'Sim' : 'Não', new Date(g.ts).toLocaleString('pt-BR')
   ]));
   const csv = linhas.map(l => l.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
   const blob = new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8' });
@@ -742,13 +744,13 @@ $('#export-csv').addEventListener('click', () => {
 
 /* exportar XLSX */
 $('#export-xlsx').addEventListener('click', () => {
-  const dados = [['#','Nome','Matrícula','Função','Brinde','Tipo','Data e hora']];
+  const dados = [['#','Nome','Matrícula','Função','Brinde','Prêmio Final','Data e hora']];
   estado.ganhadores.forEach((g,i) => dados.push([
     i+1, g.participante.nome, g.participante.matricula||'', g.participante.funcao||'',
-    g.brinde.nome, ROTULO[g.brinde.tipo], new Date(g.ts).toLocaleString('pt-BR')
+    g.brinde.nome, g.brinde.final ? 'Sim' : 'Não', new Date(g.ts).toLocaleString('pt-BR')
   ]));
   const ws = XLSX.utils.aoa_to_sheet(dados);
-  ws['!cols'] = [{wch:4},{wch:32},{wch:14},{wch:22},{wch:22},{wch:10},{wch:22}];
+  ws['!cols'] = [{wch:4},{wch:32},{wch:14},{wch:22},{wch:22},{wch:12},{wch:22}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Ganhadores');
   XLSX.writeFile(wb, 'ganhadores-sorteio-ecourbis.xlsx');
@@ -763,7 +765,7 @@ $('#desfazer-ultimo').addEventListener('click', () => {
     `Desfazer o sorteio de <b>${esc(ultimo.participante.nome)}</b>? O participante voltará ao pool de elegíveis.`,
     () => {
       estado.ganhadores.pop();
-      const b = estado.brindes.find(x => x.nome === ultimo.brinde.nome && x.tipo === ultimo.brinde.tipo);
+      const b = estado.brindes.find(x => x.nome === ultimo.brinde.nome && !!x.final === !!ultimo.brinde.final);
       if (b && b.sorteados > 0) b.sorteados--;
       salvar();
       renderGanhadores();
@@ -800,23 +802,23 @@ function carregarHistorico(){
 function salvarHistoricoAtual(){
   if (!estado.ganhadores.length) return;
   const historico = carregarHistorico();
-  const tipos = {};
-  estado.ganhadores.forEach(g => { tipos[g.brinde.tipo] = (tipos[g.brinde.tipo] || 0) + 1; });
+  const porBrinde = {};
+  estado.ganhadores.forEach(g => { porBrinde[g.brinde.nome] = (porBrinde[g.brinde.nome] || 0) + 1; });
   historico.push({
     id: Date.now(),
     ts: Date.now(),
     nome: `Evento de ${new Date().toLocaleDateString('pt-BR')}`,
     ganhadores: [...estado.ganhadores],
-    resumo: { total: estado.ganhadores.length, tipos }
+    resumo: { total: estado.ganhadores.length, porBrinde }
   });
   localStorage.setItem(CHAVE_HIST, JSON.stringify(historico));
 }
 
 function exportarHistoricoCSV(ev){
-  const linhas = [['#','Nome','Matrícula','Função','Brinde','Tipo','Data e hora']];
+  const linhas = [['#','Nome','Matrícula','Função','Brinde','Prêmio Final','Data e hora']];
   ev.ganhadores.forEach((g,i) => linhas.push([
     i+1, g.participante.nome, g.participante.matricula||'', g.participante.funcao||'',
-    g.brinde.nome, ROTULO[g.brinde.tipo]||g.brinde.tipo, new Date(g.ts).toLocaleString('pt-BR')
+    g.brinde.nome, g.brinde.final ? 'Sim' : 'Não', new Date(g.ts).toLocaleString('pt-BR')
   ]));
   const csv = linhas.map(l => l.map(c => `"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
   const blob = new Blob(['﻿' + csv], { type:'text/csv;charset=utf-8' });
@@ -838,13 +840,12 @@ function renderHistorico(){
   }
 
   lista.innerHTML = '';
-  [...historico].reverse().forEach((ev, idx) => {
-    const realIdx = historico.length - 1 - idx;
+  [...historico].reverse().forEach(ev => {
     const div = document.createElement('div');
     div.className = 'hist-item';
     const data = new Date(ev.ts).toLocaleString('pt-BR');
-    const tipos = Object.entries(ev.resumo.tipos || {})
-      .map(([t, n]) => `${n} ${ROTULO[t] || t}`).join(', ');
+    const porBrinde = ev.resumo.porBrinde || ev.resumo.tipos || {};
+    const resumoBrindes = Object.entries(porBrinde).map(([nome, n]) => `${n} × ${nome}`).join(', ');
     div.innerHTML = `
       <div class="hist-cabeca">
         <span class="hist-nome">${esc(ev.nome)}</span>
@@ -853,7 +854,7 @@ function renderHistorico(){
         <button class="hist-toggle" aria-expanded="false" aria-label="Expandir detalhes">▼</button>
       </div>
       <div class="hist-detalhe" hidden>
-        <p class="hist-tipos">${esc(tipos)}</p>
+        <p class="hist-tipos">${esc(resumoBrindes)}</p>
         <ol class="hist-lista-nomes">
           ${ev.ganhadores.map(g => `<li><b>${esc(g.participante.nome)}</b> — ${esc(g.brinde.nome)}</li>`).join('')}
         </ol>
@@ -899,7 +900,11 @@ function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&l
    INICIALIZAÇÃO
    ============================================================ */
 function init(){
-  if (dadosCorruptos) mostrarToast('Dados salvos inválidos removidos. Começando do zero.', 'aviso', 4500);
+  if (dadosCorruptos) {
+    mostrarToast('Dados salvos inválidos removidos. Começando do zero.', 'aviso', 4500);
+  } else if (!estado.participantes.length && localStorage.getItem(CHAVE_V1_LEGADA)) {
+    mostrarToast('Dados de uma versão antiga do sorteio foram encontrados, mas não são compatíveis. Reimporte a planilha de participantes.', 'aviso', 6000);
+  }
   if (estado.participantes.length) mostrarResumo();
   renderBrindes();
   irPara('importar');

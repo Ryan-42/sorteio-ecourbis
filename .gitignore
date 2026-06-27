@@ -21,3 +21,9 @@ __pycache__/
 venv/
 .env
 
+# Logs de execução local
+*.log
+
+# Planilhas de teste de performance geradas localmente
+teste-5000.csv
+

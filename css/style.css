@@ -1,7 +1,7 @@
 /* ============================================================
    SORTEIO COPA · ECOURBIS
    Direção: "estádio à noite" — azul institucional + gramado,
-   ouro reservado ao ganhador e à moto.
+   ouro reservado ao ganhador e ao prêmio final.
    ============================================================ */
 
 @font-face{
@@ -154,19 +154,16 @@ main{position:relative; z-index:1; max-width:1040px; margin:0 auto; padding:28px
 
 /* ---------- BRINDES ---------- */
 .brinde-form{
-  display:grid; grid-template-columns:auto 1fr 90px auto; gap:12px; align-items:center;
+  display:grid; grid-template-columns:1fr 90px auto auto; gap:12px; align-items:center;
   background:rgba(255,255,255,.04); border:1px solid var(--linha); border-radius:var(--raio); padding:16px;
 }
-.tipo-seletor{display:flex; gap:6px}
-.tipo{
-  font-family:inherit; display:flex; flex-direction:column; align-items:center; gap:3px;
-  background:rgba(255,255,255,.05); border:1px solid var(--linha); color:var(--gelo-mid);
-  border-radius:10px; padding:8px 11px; cursor:pointer; font-size:.72rem; font-weight:500;
-  transition:all .16s;
+.campo-final-wrap{
+  display:flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap;
+  background:rgba(255,255,255,.05); border:1px solid var(--linha); border-radius:10px;
+  padding:0 14px; height:46px; font-size:.88rem; color:var(--gelo-mid); transition:.16s;
 }
-.tipo svg{width:22px; height:22px}
-.tipo[aria-pressed="true"]{background:var(--azul); color:#fff; border-color:var(--verde)}
-.tipo[data-tipo="moto"][aria-pressed="true"]{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); color:var(--carvao); border-color:var(--ouro)}
+.campo-final-wrap:has(input:checked){background:rgba(245,196,81,.12); border-color:var(--ouro); color:var(--ouro)}
+.campo-final-wrap input{width:16px; height:16px; accent-color:var(--ouro); cursor:pointer}
 .campo{
   font-family:inherit; background:rgba(10,23,51,.55); border:1px solid var(--linha); color:var(--gelo);
   border-radius:10px; padding:12px 14px; font-size:.95rem; width:100%;
@@ -185,12 +182,12 @@ main{position:relative; z-index:1; max-width:1040px; margin:0 auto; padding:28px
 }
 .brinde-item .bi-icone{width:38px; height:38px; flex:none; display:grid; place-items:center; background:rgba(33,81,163,.45); border-radius:9px; color:var(--verde-suave)}
 .brinde-item .bi-icone svg{width:22px; height:22px}
-.brinde-item.moto .bi-icone{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); color:var(--carvao)}
+.brinde-item.final .bi-icone{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); color:var(--carvao)}
 .bi-nome{font-weight:600; font-size:1rem}
-.bi-tipo{font-size:.74rem; color:var(--gelo-mid); text-transform:uppercase; letter-spacing:.08em; font-weight:300}
+.bi-tipo{font-size:.74rem; color:var(--ouro); text-transform:uppercase; letter-spacing:.08em; font-weight:600}
 .bi-meio{flex:1; min-width:0}
 .bi-qtd{font-family:"Anton"; font-size:1.5rem; color:var(--verde-suave); min-width:34px; text-align:center}
-.brinde-item.moto .bi-qtd{color:var(--ouro)}
+.brinde-item.final .bi-qtd{color:var(--ouro)}
 .bi-qtd small{font-family:"Oswald"; font-size:.6rem; display:block; color:var(--gelo-mid); letter-spacing:.1em}
 .bi-remover{background:transparent; border:0; color:var(--gelo-mid); cursor:pointer; padding:6px; border-radius:8px; transition:.15s}
 .bi-remover svg{width:20px; height:20px}
@@ -306,6 +303,32 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 .jumbo-brinde{display:flex; align-items:center; gap:10px; margin-top:10px; font-size:1.1rem; font-weight:600; color:var(--ouro)}
 .jumbo-brinde svg{width:30px; height:30px}
 
+/* roleta animada — substitui o ciclo de nomes durante o sorteio.
+   Puramente visual (CSS), não depende do tamanho da lista de
+   participantes nem cicla nomes reais — elimina o risco de "travar"
+   exibindo um nome parado em listas grandes ou dispositivos lentos. */
+.roleta{ display:none; gap:10px; justify-content:center; align-items:center; height:110px }
+.jumbotron.embaralhando .roleta{ display:flex }
+.roleta-barra{
+  width:16px; height:88px; border-radius:8px;
+  background:linear-gradient(180deg, var(--verde-suave), var(--verde), var(--ouro));
+  box-shadow:0 0 18px rgba(79,178,134,.45);
+  animation:roleta-pulso .5s ease-in-out infinite;
+}
+.roleta-barra:nth-child(1){animation-delay:0s}
+.roleta-barra:nth-child(2){animation-delay:.09s}
+.roleta-barra:nth-child(3){animation-delay:.18s}
+.roleta-barra:nth-child(4){animation-delay:.27s}
+.roleta-barra:nth-child(5){animation-delay:.36s}
+@keyframes roleta-pulso{
+  0%,100%{transform:scaleY(1); opacity:.55}
+  50%{transform:scaleY(.32); opacity:1}
+}
+.jumbotron.embaralhando.final .roleta-barra{
+  background:linear-gradient(180deg, var(--ouro), var(--ouro-prof), #fff);
+  box-shadow:0 0 26px rgba(245,196,81,.65);
+}
+
 /* lista de ganhadores em lote */
 .jumbo-lista{
   width:100%; max-width:580px; display:flex; flex-direction:column; gap:6px;
@@ -321,7 +344,7 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 .lote-nome{font-family:"Anton"; color:#fff; font-size:1.3rem; text-transform:uppercase; flex:1; line-height:1.1}
 .lote-meta{font-size:.8rem; color:var(--gelo-mid); font-weight:300; flex:none; white-space:nowrap}
 
-/* contagem regressiva da moto (build-up) */
+/* contagem regressiva do prêmio final (build-up) */
 .jumbotron.contagem .jumbo-rotulo{color:var(--ouro)}
 .jumbotron.contagem .jumbo-nome{
   font-size:clamp(5rem,20vw,12rem); color:var(--ouro);
@@ -329,14 +352,13 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
   animation:pulso-contagem .85s ease both;
 }
 @keyframes pulso-contagem{0%{transform:scale(.4);opacity:0}45%{transform:scale(1);opacity:1}100%{transform:scale(1.08);opacity:.55}}
-.jumbotron.moto-build{background:
+.jumbotron.final-build{background:
   radial-gradient(120% 90% at 50% 6%, rgba(90,66,12,.45), transparent 60%),
   linear-gradient(165deg, rgba(34,26,4,.7), rgba(20,48,106,.55))}
 
 /* embaralhando */
 .jumbotron.embaralhando .jumbo-rotulo{color:var(--verde-suave)}
-.jumbotron.embaralhando .jumbo-nome{color:var(--verde-suave); animation:tremor .08s linear infinite}
-@keyframes tremor{0%,100%{transform:translateX(0)}25%{transform:translateX(-2px)}75%{transform:translateX(2px)}}
+.jumbotron.embaralhando.final .jumbo-rotulo{color:var(--ouro)}
 
 /* vencedor */
 .jumbotron.vencedor{border-color:var(--ouro); box-shadow:0 0 0 1px var(--ouro), 0 0 80px -8px rgba(245,196,81,.55), inset 0 0 90px rgba(0,0,0,.35)}
@@ -349,7 +371,7 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 .jumbotron.vencedor .placar-luzes{background:radial-gradient(60% 60% at 50% 42%, rgba(245,196,81,.32), transparent 70%); opacity:1}
 .jumbotron.vencedor::after{opacity:.85}   /* gramado acende */
 @keyframes revela{from{transform:scale(.7); opacity:0; filter:blur(8px)} to{transform:none; opacity:1; filter:none}}
-.jumbotron.moto-final.vencedor{background:
+.jumbotron.final.vencedor{background:
   radial-gradient(120% 90% at 50% 8%, rgba(90,66,12,.5), transparent 60%),
   linear-gradient(165deg, rgba(40,30,4,.7), rgba(20,48,106,.55))}
 
@@ -362,7 +384,7 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 .btn-sortear:hover{transform:translateY(-3px); box-shadow:0 20px 44px -12px rgba(79,178,134,.85)}
 .btn-sortear:active{transform:translateY(0)}
 .btn-sortear:disabled{opacity:.5; cursor:wait; transform:none}
-.btn-sortear.moto{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); box-shadow:0 14px 36px -10px rgba(245,196,81,.7)}
+.btn-sortear.final{background:linear-gradient(135deg,var(--ouro),var(--ouro-prof)); box-shadow:0 14px 36px -10px rgba(245,196,81,.7)}
 .acoes-ganhador{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
 .btn-confirmar{background:var(--ouro); color:var(--carvao); padding:13px 28px; font-size:1rem; box-shadow:0 10px 24px -10px rgba(245,196,81,.7)}
 .btn-confirmar:hover{transform:translateY(-2px)}
@@ -389,16 +411,17 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 .tabela-ganhadores{width:100%; border-collapse:collapse; font-weight:300; font-size:.92rem; margin-top:6px}
 .tabela-ganhadores th{text-align:left; color:var(--verde-suave); font-weight:600; text-transform:uppercase; font-size:.68rem; letter-spacing:.08em; padding:10px; border-bottom:1px solid var(--linha)}
 .tabela-ganhadores td{padding:11px 10px; border-bottom:1px solid rgba(174,191,220,.1)}
-.tabela-ganhadores tr.moto td{background:rgba(245,196,81,.08)}
-.tabela-ganhadores tr.moto td:nth-child(5){color:var(--ouro); font-weight:600}
+.tabela-ganhadores tr.final td{background:rgba(245,196,81,.08)}
+.tabela-ganhadores tr.final td:nth-child(5){color:var(--ouro); font-weight:600}
 .tg-num{font-family:"Anton"; color:var(--gelo-mid)}
 
 /* ---------- MODAL HISTÓRICO ---------- */
 .historico-dlg{
   border:1px solid var(--linha); border-radius:18px; padding:0; max-width:520px; width:90vw;
   background:var(--azul-noite); color:var(--gelo); box-shadow:var(--sombra); max-height:80vh;
-  display:flex; flex-direction:column;
+  flex-direction:column;   /* só aplica de fato com [open] abaixo — dialog fica display:none por padrão */
 }
+.historico-dlg[open]{display:flex}
 .historico-dlg::backdrop{background:rgba(6,15,38,.75); backdrop-filter:blur(4px)}
 .historico-header{
   display:flex; align-items:center; justify-content:space-between;
@@ -455,6 +478,8 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 .salvo-indicator.visivel{opacity:.7}
 
 /* ---------- DIÁLOGO ---------- */
+/* margin:auto restaura a centralização padrão de <dialog>, anulada pelo reset global *{margin:0} */
+dialog{margin:auto}
 .confirmador{
   border:1px solid var(--linha); border-radius:16px; padding:26px; max-width:380px;
   background:var(--azul-prof); color:var(--gelo); box-shadow:var(--sombra);
@@ -473,9 +498,8 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
   .salvo-indicator{display:none}
   .resumo{grid-template-columns:1fr}
   .brinde-form{grid-template-columns:1fr 1fr}
-  .tipo-seletor{grid-column:1/-1; justify-content:space-between}
-  .tipo{flex:1}
   #brinde-nome{grid-column:1/-1}
+  .campo-final-wrap{justify-content:center}
   .btn-add{grid-column:1/-1; justify-content:center}
   .palco-controles{gap:8px; padding:8px 10px}
   .slider-tensao{width:70px}
@@ -512,8 +536,8 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
   .tabela-ganhadores{font-size:.85rem; border-collapse:collapse; width:100%}
   .tabela-ganhadores th{background:#2151A3; color:#fff; padding:8px; text-align:left}
   .tabela-ganhadores td{padding:7px 8px; border-bottom:1px solid #ddd}
-  .tabela-ganhadores tr.moto td{background:#fffbe6}
-  .tabela-ganhadores tr.moto td:nth-child(5){font-weight:700}
+  .tabela-ganhadores tr.final td{background:#fffbe6}
+  .tabela-ganhadores tr.final td:nth-child(5){font-weight:700}
   .tela-cabeca h2{color:#2151A3; font-size:1.8rem}
   .tela-cabeca p{color:#555}
 }
@@ -522,5 +546,5 @@ body.modo-apresentacao .btn-sair-apresentacao{display:block}
 :focus-visible{outline:2px solid var(--verde); outline-offset:2px}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms !important; transition-duration:.01ms !important}
-  .jumbotron.embaralhando .jumbo-nome{animation:none}
+  .roleta-barra{animation:none; opacity:.7}
 }
